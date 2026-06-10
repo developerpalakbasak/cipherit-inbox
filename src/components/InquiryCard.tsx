@@ -15,14 +15,16 @@ interface Props {
 
 export default function InquiryCard({ item, onPress }: Props) {
   const initials = getInitials(item.fullName);
-  const avatarColor = getAvatarColor(item._id.$oid);
+  const avatarColor = getAvatarColor(item._id);
   const planColor = getPlanColor(item.plan);
-  const time = formatRelativeTime(item.createdAt.$date);
+  const time = formatRelativeTime(item.createdAt);
+
 
   return (
     <TouchableOpacity
       activeOpacity={0.75}
-      onPress={() => onPress?.(item._id.$oid)}
+      onPress={() => onPress?.(item._id)}
+
       className={`rounded-2xl p-4 mb-3 border relative ${
         !item.isRead
           ? "bg-surface-card-unread border-border-active"

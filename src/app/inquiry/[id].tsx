@@ -1,18 +1,25 @@
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, Text, TouchableOpacity, View, Linking } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { INQUIRIES, formatRelativeTime, getAvatarColor, getInitials, getPlanColor, type Inquiry } from "../../data/inquiries";
+import { formatRelativeTime, getAvatarColor, getInitials, getPlanColor, type Inquiry } from "../../data/inquiries";
+import axiosInstance from "../../api/axiosInstance";
 
 export default function InquiryDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [inquiry, setInquiry] = useState<Inquiry | null>(null);
 
   useEffect(() => {
-    const found = INQUIRIES.find(i => i._id.$oid === id);
-    if (found) {
-      setInquiry(found);
-    }
+    const fetchInquiry = async () => {
+      try {
+        const response = await axiosInstance.get<Inquiry[]>("/contacts");
+        const found = response.data.find((i) => i._id === id);
+        if (found) setInquiry(found);
+      } catch (err) {
+        console.error("Failed to load inquiry", err);
+      }
+    };
+    fetchInquiry();
   }, [id]);
 
   if (!inquiry) {
@@ -27,25 +34,41 @@ export default function InquiryDetailsScreen() {
   }
 
   const initials = getInitials(inquiry.fullName);
-  const avatarColor = getAvatarColor(inquiry._id.$oid);
+  const avatarColor = getAvatarColor(inquiry._id);
   const planColor = getPlanColor(inquiry.plan);
-  const time = formatRelativeTime(inquiry.createdAt.$date);
+  const time = formatRelativeTime(inquiry.createdAt);
 
-  function handleMarkAsRead() {
-    const idx = INQUIRIES.findIndex(i => i._id.$oid === id);
-    if (idx !== -1) {
-      INQUIRIES[idx].isRead = true;
-      setInquiry({ ...INQUIRIES[idx] });
+  async function handleMarkAsRead() {
+    try {
+      await axiosInstance.patch(`/contacts/${id}/read`);
+      setInquiry((prev) => prev ? { ...prev, isRead: true } : prev);
+    } catch (err) {
+      console.error("Failed to mark as read", err);
     }
   }
 
-  function handleMarkAsReplied() {
-    const idx = INQUIRIES.findIndex(i => i._id.$oid === id);
-    if (idx !== -1) {
-      INQUIRIES[idx].isReplyed = true;
-      setInquiry({ ...INQUIRIES[idx] });
+  async function handleMarkAsReplied() {
+    try {
+      await axiosInstance.patch(`/contacts/${id}/replyed`);
+      setInquiry((prev) => prev ? { ...prev, isReplyed: true } : prev);
+    } catch (err) {
+      console.error("Failed to mark as replied", err);
     }
   }
+
+  const handleWhatsApp = () => {
+    let cleanPhone = inquiry.phone.replace(/[^0-9]/g, "");
+    if (cleanPhone.startsWith("0") && cleanPhone.length === 11) {
+      cleanPhone = "88" + cleanPhone;
+    }
+    const url = `https://wa.me/${cleanPhone}`;
+    Linking.openURL(url).catch((err) => console.error("An error occurred opening WhatsApp", err));
+  };
+
+  const handleEmail = () => {
+    const url = `mailto:${inquiry.email}?subject=CipherIt Inquiry Response`;
+    Linking.openURL(url).catch((err) => console.error("An error occurred opening Email", err));
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-surface" edges={["top", "bottom"]}>
@@ -72,6 +95,24 @@ export default function InquiryDetailsScreen() {
             <Text className="text-ink-muted text-sm mt-1">{inquiry.email}</Text>
             <Text className="text-ink-muted text-sm mt-0.5">{inquiry.phone}</Text>
           </View>
+        </View>
+
+        {/* Quick Contact Actions */}
+        <View className="flex-row gap-3 mb-6">
+          <TouchableOpacity
+            onPress={handleWhatsApp}
+            className="flex-1 flex-row items-center justify-center bg-[#25D366] py-3 rounded-xl gap-2 shadow-sm"
+            activeOpacity={0.8}
+          >
+            <Text className="text-white font-bold text-sm">WhatsApp</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleEmail}
+            className="flex-1 flex-row items-center justify-center bg-brand py-3 rounded-xl gap-2 shadow-sm"
+            activeOpacity={0.8}
+          >
+            <Text className="text-black font-bold text-sm">Email</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Project & Plan */}

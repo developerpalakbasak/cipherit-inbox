@@ -1,34 +1,48 @@
-import React, { useState, useCallback } from "react";
+import { router, useFocusEffect } from "expo-router";
+import React, { useCallback, useState } from "react";
 import {
-  View,
-  Text,
   FlatList,
-  TouchableOpacity,
   Image,
   RefreshControl,
+  Text,
+  TouchableOpacity,
+  View,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useFocusEffect, router } from "expo-router";
 import InquiryCard from "../components/InquiryCard";
-import { INQUIRIES, type Inquiry } from "../data/inquiries";
+import { type Inquiry } from "../data/inquiries";
+import axiosInstance from "../api/axiosInstance";
 
 type Tab = "unread" | "pending" | "all";
 
 export default function InboxScreen() {
   const [activeTab, setActiveTab] = useState<Tab>("unread");
-  const [inquiries, setInquiries] = useState<Inquiry[]>(INQUIRIES);
+  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const onRefresh = () => {
+  const fetchContacts = async (showLoader = true) => {
+    if (showLoader) setIsLoading(true);
+    try {
+      const response = await axiosInstance.get<Inquiry[]>("/contacts");
+      setInquiries(response.data);
+    } catch (error) {
+      console.error("Failed to fetch contacts", error);
+    } finally {
+      if (showLoader) setIsLoading(false);
+    }
+  };
+
+  const onRefresh = async () => {
     setIsRefreshing(true);
-    // Simulate data reload – replace with real fetch if needed
-    setInquiries([...INQUIRIES]);
+    await fetchContacts(false);
     setIsRefreshing(false);
   };
 
   useFocusEffect(
     useCallback(() => {
-      setInquiries([...INQUIRIES]);
+      fetchContacts();
     }, [])
   );
 
@@ -44,21 +58,12 @@ export default function InboxScreen() {
 
   function markAsRead(oid: string) {
     setInquiries((prev) =>
-      prev.map((i) =>
-        i._id.$oid === oid ? { ...i, isRead: true } : i
-      )
+      prev.map((i) => (i._id === oid ? { ...i, isRead: true } : i))
     );
-    const index = INQUIRIES.findIndex((i) => i._id.$oid === oid);
-    if (index !== -1) {
-      INQUIRIES[index].isRead = true;
-    }
   }
 
   function markAllRead() {
     setInquiries((prev) => prev.map((i) => ({ ...i, isRead: true })));
-    INQUIRIES.forEach((i) => {
-      i.isRead = true;
-    });
   }
 
   return (
@@ -170,33 +175,41 @@ export default function InboxScreen() {
 
       {/* ── List ── */}
       <FlatList
-  data={displayed}
-  keyExtractor={(item) => item._id.$oid}
-  renderItem={({ item }) => (
-    <InquiryCard
-      item={item}
-      onPress={() => router.push(`/inquiry/${item._id.$oid}`)}
-    />
-  )}
-  ListEmptyComponent={() => (
-    <View className="flex-1 items-center justify-center pb-16">
-      <Text className="text-5xl mb-4">✅</Text>
-      <Text className="text-xl font-bold text-ink-primary mb-2">
-        All caught up!
-      </Text>
-      <Text className="text-ink-muted text-sm text-center px-10">
-        {activeTab === "unread" && "No unread inquiries at the moment."}
-        {activeTab === "pending" && "No pending inquiries at the moment."}
-        {activeTab === "all" && "Your inbox is empty."}
-      </Text>
-    </View>
-  )}
-  contentContainerClassName="px-4 pb-8"
-  showsVerticalScrollIndicator={false}
-  refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
-  onEndReached={onRefresh}
-  onEndReachedThreshold={0.5}
-/>
+        data={displayed}
+        keyExtractor={(item) => item._id}
+        renderItem={({ item }) => (
+          <InquiryCard
+            item={item}
+            onPress={() => router.push(`/inquiry/${item._id}`)}
+          />
+        )}
+        ListEmptyComponent={() => {
+          if (isLoading) {
+            return (
+              <View className="flex-1 items-center justify-center py-20">
+                <ActivityIndicator size="large" color="#9dfdcd" />
+              </View>
+            );
+          }
+          return (
+            <View className="flex-1 items-center justify-center pb-16">
+              <Text className="text-5xl mb-4">✅</Text>
+              <Text className="text-xl font-bold text-ink-primary mb-2">
+                All caught up!
+              </Text>
+              <Text className="text-ink-muted text-sm text-center px-10">
+                {activeTab === "unread" && "No unread inquiries at the moment."}
+                {activeTab === "pending" && "No pending inquiries at the moment."}
+                {activeTab === "all" && "Your inbox is empty."}
+              </Text>
+            </View>
+          );
+        }}
+        contentContainerClassName="px-4 pb-8"
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
+        onEndReachedThreshold={0.5}
+      />
     </SafeAreaView>
   );
 }

@@ -41,6 +41,9 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "API_URL": "https://cipherit-inbox.hutchinsonapac.com"
     }
   }
 }
