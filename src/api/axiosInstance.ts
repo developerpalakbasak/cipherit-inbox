@@ -7,6 +7,9 @@ const baseURL = "https://cipherit-inbox.hutchinsonapac.com";
 const axiosInstance = axios.create({
   baseURL,
   timeout: 10000, // 10 seconds
+  headers: {
+    Authorization: "Bearer token",
+  },
 });
 
 export default axiosInstance;
