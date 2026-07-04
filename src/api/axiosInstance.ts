@@ -8,7 +8,7 @@ const axiosInstance = axios.create({
   baseURL,
   timeout: 10000, // 10 seconds
   headers: {
-    Authorization: "Bearer token",
+    Authorization: "Bearer 0626a13c86b2ca930433a84886c90c05c9f72ada8ba5c5d83f92f2e3c82bc193",
   },
 });
 

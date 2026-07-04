@@ -87,17 +87,14 @@ export default function InboxScreen() {
           </View>
         </View>
 
-        {/* Mark all read — only visible on Unread tab */}
-        {activeTab === "unread" && unreadCount > 0 && (
-          <TouchableOpacity
-            onPress={markAllRead}
-            className="bg-surface-card-unread border border-border-active rounded-full px-3.5 py-1.5"
-          >
-            <Text className="text-brand text-[12px] font-semibold">
-              Mark all read
-            </Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity
+          onPress={() => router.push("/subscribers" as any)}
+          className="bg-surface-card-unread border border-border-active rounded-full px-3.5 py-1.5"
+        >
+          <Text className="text-brand text-[12px] font-semibold">
+            Subscribers
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* ── Custom top tab bar ── */}

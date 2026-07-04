@@ -9,6 +9,7 @@ export default function RootLayout() {
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: "#0a0c18" },
+          animation: "none",
         }}
       />
     </View>
